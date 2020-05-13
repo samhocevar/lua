@@ -545,7 +545,7 @@
 ** without modifying the main part of the file.
 */
 
-#define BASE 0
+extern int BASE;
 
 #endif
 

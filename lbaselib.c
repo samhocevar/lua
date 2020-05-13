@@ -350,6 +350,18 @@ static int luaB_assert (lua_State *L) {
 }
 
 
+int BASE = 0;
+
+static int luaB_base (lua_State *L) {
+  int i = luaL_checkint(L, 1);
+  luaL_argcheck(L, i == 0 || i == 1, 1, "invalid base");
+  if (i != BASE) {
+    BASE = i;
+  }
+  return 0;
+}
+
+
 static int luaB_select (lua_State *L) {
   int n = lua_gettop(L);
   if (lua_type(L, 1) == LUA_TSTRING && *lua_tostring(L, 1) == '#') {
@@ -416,6 +428,7 @@ static int luaB_tostring (lua_State *L) {
 
 static const luaL_Reg base_funcs[] = {
   {"assert", luaB_assert},
+  {"base", luaB_base},
   {"collectgarbage", luaB_collectgarbage},
   {"dofile", luaB_dofile},
   {"error", luaB_error},
