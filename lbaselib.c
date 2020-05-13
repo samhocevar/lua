@@ -199,7 +199,7 @@ static int pairsmeta (lua_State *L, const char *method, int iszero,
     luaL_checktype(L, 1, LUA_TTABLE);  /* argument must be a table */
     lua_pushcfunction(L, iter);  /* will return generator, */
     lua_pushvalue(L, 1);  /* state, */
-    if (iszero) lua_pushinteger(L, 0);  /* and initial value */
+    if (iszero) lua_pushinteger(L, BASE - 1);  /* and initial value */
     else lua_pushnil(L);
   }
   else {
@@ -358,10 +358,10 @@ static int luaB_select (lua_State *L) {
   }
   else {
     int i = luaL_checkint(L, 1);
-    if (i < 0) i = n + i;
-    else if (i > n) i = n;
-    luaL_argcheck(L, 1 <= i, 1, "index out of range");
-    return n - i;
+    if (i < 0) i = n + BASE - 1 + i;
+    else if (i > n + BASE - 1) i = n + BASE - 1;
+    luaL_argcheck(L, BASE <= i, 1, "index out of range");
+    return n + BASE - 1 - i;
   }
 }
 

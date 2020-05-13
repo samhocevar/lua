@@ -516,25 +516,26 @@ LUALIB_API char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
 */
 
 /* index of free-list header */
-#define freelist	0
+#define freelist	(BASE-1)
 
 
 LUALIB_API int luaL_ref (lua_State *L, int t) {
   int ref;
+  int isnum;
   if (lua_isnil(L, -1)) {
     lua_pop(L, 1);  /* remove from stack */
     return LUA_REFNIL;  /* `nil' has a unique fixed reference */
   }
   t = lua_absindex(L, t);
   lua_rawgeti(L, t, freelist);  /* get first free element */
-  ref = (int)lua_tointeger(L, -1);  /* ref = t[freelist] */
+  ref = (int)lua_tointegerx(L, -1, &isnum);  /* ref = t[freelist] */
   lua_pop(L, 1);  /* remove it from stack */
-  if (ref != 0) {  /* any free element? */
+  if (isnum) {  /* any free element? */
     lua_rawgeti(L, t, ref);  /* remove it from list */
     lua_rawseti(L, t, freelist);  /* (t[freelist] = t[ref]) */
   }
   else  /* no free elements */
-    ref = (int)lua_rawlen(L, t) + 1;  /* get a new reference */
+    ref = (int)lua_rawlen(L, t) + BASE;  /* get a new reference */
   lua_rawseti(L, t, ref);
   return ref;
 }

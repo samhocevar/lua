@@ -66,8 +66,8 @@ LUALIB_API int (luaL_fileresult) (lua_State *L, int stat, const char *fname);
 LUALIB_API int (luaL_execresult) (lua_State *L, int stat);
 
 /* pre-defined references */
-#define LUA_NOREF       (-2)
-#define LUA_REFNIL      (-1)
+#define LUA_NOREF       (BASE-3)
+#define LUA_REFNIL      (BASE-2)
 
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);

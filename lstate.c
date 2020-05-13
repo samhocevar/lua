@@ -167,7 +167,7 @@ static void init_registry (lua_State *L, global_State *g) {
   /* create registry */
   Table *registry = luaH_new(L);
   sethvalue(L, &g->l_registry, registry);
-  luaH_resize(L, registry, LUA_RIDX_LAST, 0);
+  luaH_resize(L, registry, LUA_RIDX_LAST + 1 - BASE, 0);
   /* registry[LUA_RIDX_MAINTHREAD] = L */
   setthvalue(L, &mt, L);
   luaH_setint(L, registry, LUA_RIDX_MAINTHREAD, &mt);

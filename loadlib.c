@@ -263,7 +263,7 @@ static void ll_addtoclib (lua_State *L, const char *path, void *plib) {
   lua_pushlightuserdata(L, plib);
   lua_pushvalue(L, -1);
   lua_setfield(L, -3, path);  /* CLIBS[path] = plib */
-  lua_rawseti(L, -2, luaL_len(L, -2) + 1);  /* CLIBS[#CLIBS + 1] = plib */
+  lua_rawseti(L, -2, luaL_len(L, -2) + BASE);  /* CLIBS[#CLIBS + 1] = plib */
   lua_pop(L, 1);  /* pop CLIBS table */
 }
 
@@ -275,7 +275,7 @@ static void ll_addtoclib (lua_State *L, const char *path, void *plib) {
 static int gctm (lua_State *L) {
   int n = luaL_len(L, 1);
   for (; n >= 1; n--) {  /* for each handle, in reverse order */
-    lua_rawgeti(L, 1, n);  /* get handle CLIBS[n] */
+    lua_rawgeti(L, 1, n + BASE - 1);  /* get handle CLIBS[n] */
     ll_unloadlib(lua_touserdata(L, -1));
     lua_pop(L, 1);  /* pop handle */
   }
@@ -483,7 +483,7 @@ static void findloader (lua_State *L, const char *name) {
   if (!lua_istable(L, 3))
     luaL_error(L, LUA_QL("package.searchers") " must be a table");
   /*  iterate over available searchers to find a loader */
-  for (i = 1; ; i++) {
+  for (i = BASE; ; i++) {
     lua_rawgeti(L, 3, i);  /* get a searcher */
     if (lua_isnil(L, -1)) {  /* no more searchers? */
       lua_pop(L, 1);  /* remove nil */
@@ -682,7 +682,7 @@ static void createsearcherstable (lua_State *L) {
   for (i=0; searchers[i] != NULL; i++) {
     lua_pushvalue(L, -2);  /* set 'package' as upvalue for all searchers */
     lua_pushcclosure(L, searchers[i], 1);
-    lua_rawseti(L, -2, i+1);
+    lua_rawseti(L, -2, i+BASE);
   }
 }
 

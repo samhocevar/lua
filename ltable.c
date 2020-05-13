@@ -145,8 +145,8 @@ static int findindex (lua_State *L, Table *t, StkId key) {
   int i;
   if (ttisnil(key)) return -1;  /* first iteration */
   i = arrayindex(key);
-  if (0 < i && i <= t->sizearray)  /* is `key' inside array part? */
-    return i-1;  /* yes; that's the index (corrected to C) */
+  if (BASE <= i && i - BASE < t->sizearray)  /* is `key' inside array part? */
+    return i-BASE;  /* yes; that's the index (corrected to C) */
   else {
     Node *n = mainposition(t, key);
     for (;;) {  /* check whether `key' is somewhere in the chain */
@@ -170,7 +170,7 @@ int luaH_next (lua_State *L, Table *t, StkId key) {
   int i = findindex(L, t, key);  /* find original element */
   for (i++; i < t->sizearray; i++) {  /* try first array part */
     if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
-      setnvalue(key, cast_num(i+1));
+      setnvalue(key, cast_num(i+BASE));
       setobj2s(L, key+1, &t->array[i]);
       return 1;
     }
@@ -217,8 +217,8 @@ static int computesizes (int nums[], int *narray) {
 
 static int countint (const TValue *key, int *nums) {
   int k = arrayindex(key);
-  if (0 < k && k <= MAXASIZE) {  /* is `key' an appropriate array index? */
-    nums[luaO_ceillog2(k)]++;  /* count as such */
+  if (BASE <= k && k - BASE < MAXASIZE) {  /* is `key' an appropriate array index? */
+    nums[luaO_ceillog2(k+1-BASE)]++;  /* count as such */
     return 1;
   }
   else
@@ -230,18 +230,19 @@ static int numusearray (const Table *t, int *nums) {
   int lg;
   int ttlg;  /* 2^lg */
   int ause = 0;  /* summation of `nums' */
-  int i = 1;  /* count to traverse all array keys */
+  // XXX BASE: could be replaced with i=0 for both bases
+  int i = BASE;  /* count to traverse all array keys */
   for (lg=0, ttlg=1; lg<=MAXBITS; lg++, ttlg*=2) {  /* for each slice */
     int lc = 0;  /* counter */
     int lim = ttlg;
     if (lim > t->sizearray) {
       lim = t->sizearray;  /* adjust upper limit */
-      if (i > lim)
+      if (i - BASE >= lim)
         break;  /* no more elements to count */
     }
     /* count elements in range (2^(lg-1), 2^lg] */
-    for (; i <= lim; i++) {
-      if (!ttisnil(&t->array[i-1]))
+    for (; i - BASE < lim; i++) {
+      if (!ttisnil(&t->array[i-BASE]))
         lc++;
     }
     nums[lg] += lc;
@@ -315,7 +316,7 @@ void luaH_resize (lua_State *L, Table *t, int nasize, int nhsize) {
     /* re-insert elements from vanishing slice */
     for (i=nasize; i<oldasize; i++) {
       if (!ttisnil(&t->array[i]))
-        luaH_setint(L, t, i + 1, &t->array[i]);
+        luaH_setint(L, t, i + BASE, &t->array[i]);
     }
     /* shrink array */
     luaM_reallocvector(L, t->array, oldasize, nasize, TValue);
@@ -445,8 +446,8 @@ TValue *luaH_newkey (lua_State *L, Table *t, const TValue *key) {
 */
 const TValue *luaH_getint (Table *t, int key) {
   /* (1 <= key && key <= t->sizearray) */
-  if (cast(unsigned int, key-1) < cast(unsigned int, t->sizearray))
-    return &t->array[key-1];
+  if (cast(unsigned int, key-BASE) < cast(unsigned int, t->sizearray))
+    return &t->array[key-BASE];
   else {
     lua_Number nk = cast_num(key);
     Node *n = hashnum(t, nk);
@@ -538,16 +539,16 @@ static int unbound_search (Table *t, unsigned int j) {
     j *= 2;
     if (j > cast(unsigned int, MAX_INT)) {  /* overflow? */
       /* table was built with bad purposes: resort to linear search */
-      i = 1;
+      i = BASE;
       while (!ttisnil(luaH_getint(t, i))) i++;
-      return i - 1;
+      return i - BASE;
     }
   }
   /* now do a binary search between them */
-  while (j - i > 1) {
+  while (j - i > BASE) {
     unsigned int m = (i+j)/2;
     if (ttisnil(luaH_getint(t, m))) j = m;
-    else i = m;
+    else i = m + 1 - BASE;
   }
   return i;
 }
@@ -562,10 +563,10 @@ int luaH_getn (Table *t) {
   if (j > 0 && ttisnil(&t->array[j - 1])) {
     /* there is a boundary in the array part: (binary) search for it */
     unsigned int i = 0;
-    while (j - i > 1) {
+    while (j - i > BASE) {
       unsigned int m = (i+j)/2;
-      if (ttisnil(&t->array[m - 1])) j = m;
-      else i = m;
+      if (ttisnil(&t->array[m - BASE])) j = m;
+      else i = m + 1 - BASE;
     }
     return i;
   }

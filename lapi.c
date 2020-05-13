@@ -1190,8 +1190,8 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
   switch (ttype(fi)) {
     case LUA_TCCL: {  /* C closure */
       CClosure *f = clCvalue(fi);
-      if (!(1 <= n && n <= f->nupvalues)) return NULL;
-      *val = &f->upvalue[n-1];
+      if (!(BASE <= n && n - BASE < f->nupvalues)) return NULL;
+      *val = &f->upvalue[n-BASE];
       if (owner) *owner = obj2gco(f);
       return "";
     }
@@ -1199,10 +1199,10 @@ static const char *aux_upvalue (StkId fi, int n, TValue **val,
       LClosure *f = clLvalue(fi);
       TString *name;
       Proto *p = f->p;
-      if (!(1 <= n && n <= p->sizeupvalues)) return NULL;
-      *val = f->upvals[n-1]->v;
-      if (owner) *owner = obj2gco(f->upvals[n - 1]);
-      name = p->upvalues[n-1].name;
+      if (!(BASE <= n && n - BASE < p->sizeupvalues)) return NULL;
+      *val = f->upvals[n-BASE]->v;
+      if (owner) *owner = obj2gco(f->upvals[n - BASE]);
+      name = p->upvalues[n-BASE].name;
       return (name == NULL) ? "" : getstr(name);
     }
     default: return NULL;  /* not a closure */
@@ -1248,9 +1248,9 @@ static UpVal **getupvalref (lua_State *L, int fidx, int n, LClosure **pf) {
   StkId fi = index2addr(L, fidx);
   api_check(L, ttisLclosure(fi), "Lua function expected");
   f = clLvalue(fi);
-  api_check(L, (1 <= n && n <= f->p->sizeupvalues), "invalid upvalue index");
+  api_check(L, (BASE <= n && n - BASE < f->p->sizeupvalues), "invalid upvalue index");
   if (pf) *pf = f;
-  return &f->upvals[n - 1];  /* get its upvalue pointer */
+  return &f->upvals[n - BASE];  /* get its upvalue pointer */
 }
 
 
@@ -1262,8 +1262,8 @@ LUA_API void *lua_upvalueid (lua_State *L, int fidx, int n) {
     }
     case LUA_TCCL: {  /* C closure */
       CClosure *f = clCvalue(fi);
-      api_check(L, 1 <= n && n <= f->nupvalues, "invalid upvalue index");
-      return &f->upvalue[n - 1];
+      api_check(L, BASE <= n && n - BASE < f->nupvalues, "invalid upvalue index");
+      return &f->upvalue[n - BASE];
     }
     default: {
       api_check(L, 0, "closure expected");

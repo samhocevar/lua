@@ -94,8 +94,8 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 
 
 /* predefined values in the registry */
-#define LUA_RIDX_MAINTHREAD	1
-#define LUA_RIDX_GLOBALS	2
+#define LUA_RIDX_MAINTHREAD	(BASE)
+#define LUA_RIDX_GLOBALS	(BASE+1)
 #define LUA_RIDX_LAST		LUA_RIDX_GLOBALS
 
 

@@ -199,9 +199,10 @@ static int getargs (lua_State *L, char **argv, int n) {
   for (i=n+1; i < argc; i++)
     lua_pushstring(L, argv[i]);
   lua_createtable(L, narg, n + 1);
+  // XXX BASE: not sure here
   for (i=0; i < argc; i++) {
     lua_pushstring(L, argv[i]);
-    lua_rawseti(L, -2, i - n);
+    lua_rawseti(L, -2, i - n + BASE - 1);
   }
   return narg;
 }

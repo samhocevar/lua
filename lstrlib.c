@@ -43,22 +43,22 @@ static int str_len (lua_State *L) {
 
 
 /* translate a relative string position: negative means back from end */
-static size_t posrelat (ptrdiff_t pos, size_t len) {
-  if (pos >= 0) return (size_t)pos;
-  else if (0u - (size_t)pos > len) return 0;
-  else return len - ((size_t)-pos) + 1;
+static ptrdiff_t posrelat (ptrdiff_t pos, size_t len) {
+  if (pos >= 0) return pos;
+  else if (0u - (size_t)pos > len) return BASE - 1;
+  else return len - ((size_t)-pos) + BASE;
 }
 
 
 static int str_sub (lua_State *L) {
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
-  size_t start = posrelat(luaL_checkinteger(L, 2), l);
-  size_t end = posrelat(luaL_optinteger(L, 3, -1), l);
-  if (start < 1) start = 1;
-  if (end > l) end = l;
-  if (start <= end)
-    lua_pushlstring(L, s + start - 1, end - start + 1);
+  ptrdiff_t start = posrelat(luaL_checkinteger(L, 2), l);
+  ptrdiff_t end = posrelat(luaL_optinteger(L, 3, BASE ? -1 : (int)l), l);
+  if (start < BASE) start = BASE;
+  if (end > (ptrdiff_t)l) end = l;
+  if (start < end + BASE)
+    lua_pushlstring(L, s + start - BASE, end - start + BASE);
   else lua_pushliteral(L, "");
   return 1;
 }
@@ -133,18 +133,18 @@ static int str_rep (lua_State *L) {
 static int str_byte (lua_State *L) {
   size_t l;
   const char *s = luaL_checklstring(L, 1, &l);
-  size_t posi = posrelat(luaL_optinteger(L, 2, 1), l);
-  size_t pose = posrelat(luaL_optinteger(L, 3, posi), l);
+  ptrdiff_t posi = posrelat(luaL_optinteger(L, 2, BASE), l);
+  ptrdiff_t pose = posrelat(luaL_optinteger(L, 3, posi + 1 - BASE), l);
   int n, i;
-  if (posi < 1) posi = 1;
-  if (pose > l) pose = l;
-  if (posi > pose) return 0;  /* empty interval; return no values */
-  n = (int)(pose -  posi + 1);
-  if (posi + n <= pose)  /* (size_t -> int) overflow? */
+  if (posi < BASE) posi = BASE;
+  if (pose > (ptrdiff_t)l) pose = l;
+  if (posi >= pose + BASE) return 0;  /* empty interval; return no values */
+  n = (int)(pose + BASE - posi);
+  if (posi + n <= pose + BASE - 1)  /* (size_t -> int) overflow? */
     return luaL_error(L, "string slice too long");
   luaL_checkstack(L, n, "string slice too long");
   for (i=0; i<n; i++)
-    lua_pushinteger(L, uchar(s[posi+i-1]));
+    lua_pushinteger(L, uchar(s[posi+i-BASE]));
   return n;
 }
 
@@ -545,7 +545,7 @@ static void push_onecapture (MatchState *ms, int i, const char *s,
     ptrdiff_t l = ms->capture[i].len;
     if (l == CAP_UNFINISHED) luaL_error(ms->L, "unfinished capture");
     if (l == CAP_POSITION)
-      lua_pushinteger(ms->L, ms->capture[i].init - ms->src_init + 1);
+      lua_pushinteger(ms->L, ms->capture[i].init - ms->src_init + BASE);
     else
       lua_pushlstring(ms->L, ms->capture[i].init, l);
   }
@@ -578,25 +578,25 @@ static int str_find_aux (lua_State *L, int find) {
   size_t ls, lp;
   const char *s = luaL_checklstring(L, 1, &ls);
   const char *p = luaL_checklstring(L, 2, &lp);
-  size_t init = posrelat(luaL_optinteger(L, 3, 1), ls);
-  if (init < 1) init = 1;
-  else if (init > ls + 1) {  /* start after string's end? */
+  ptrdiff_t init = posrelat(luaL_optinteger(L, 3, BASE), ls);
+  if (init < BASE) init = BASE;
+  else if (init > (ptrdiff_t)ls + BASE) {  /* start after string's end? */
     lua_pushnil(L);  /* cannot find anything */
     return 1;
   }
   /* explicit request or no special characters? */
   if (find && (lua_toboolean(L, 4) || nospecials(p, lp))) {
     /* do a plain search */
-    const char *s2 = lmemfind(s + init - 1, ls - init + 1, p, lp);
+    const char *s2 = lmemfind(s + init - BASE, ls - init + BASE, p, lp);
     if (s2) {
-      lua_pushinteger(L, s2 - s + 1);
+      lua_pushinteger(L, s2 - s + BASE);
       lua_pushinteger(L, s2 - s + lp);
       return 2;
     }
   }
   else {
     MatchState ms;
-    const char *s1 = s + init - 1;
+    const char *s1 = s + init - BASE;
     int anchor = (*p == '^');
     if (anchor) {
       p++; lp--;  /* skip anchor character */
@@ -612,7 +612,7 @@ static int str_find_aux (lua_State *L, int find) {
       lua_assert(ms.matchdepth == MAXCCALLS);
       if ((res=match(&ms, s1, p)) != NULL) {
         if (find) {
-          lua_pushinteger(L, s1 - s + 1);  /* start */
+          lua_pushinteger(L, s1 - s + BASE);  /* start */
           lua_pushinteger(L, res - s);   /* end */
           return push_captures(&ms, NULL, 0) + 2;
         }

@@ -768,8 +768,10 @@ void luaV_execute (lua_State *L) {
         lua_Number step = nvalue(ra+2);
         lua_Number idx = luai_numadd(L, nvalue(ra), step); /* increment index */
         lua_Number limit = nvalue(ra+1);
-        if (luai_numlt(L, 0, step) ? luai_numle(L, idx, limit)
-                                   : luai_numle(L, limit, idx)) {
+        if (luai_numlt(L, 0, step) ? BASE ? luai_numle(L, idx, limit)
+                                          : luai_numlt(L, idx, limit)
+                                   : BASE ? luai_numle(L, limit, idx)
+                                          : luai_numlt(L, limit, idx)) {
           ci->u.l.savedpc += GETARG_sBx(i);  /* jump back */
           setnvalue(ra, idx);  /* update internal index... */
           setnvalue(ra+3, idx);  /* ...and external index */
@@ -825,7 +827,7 @@ void luaV_execute (lua_State *L) {
           luaH_resizearray(L, h, last);  /* pre-allocate it at once */
         for (; n > 0; n--) {
           TValue *val = ra+n;
-          luaH_setint(L, h, last--, val);
+          luaH_setint(L, h, --last + BASE, val);
           luaC_barrierback(L, obj2gco(h), val);
         }
         L->top = ci->top;  /* correct top (in case of previous open call) */
