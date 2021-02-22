@@ -348,9 +348,9 @@ static int io_lines (lua_State *L) {
 
 
 static int read_number (lua_State *L, FILE *f) {
-  lua_Number d;
+  double d;
   if (fscanf(f, LUA_NUMBER_SCAN, &d) == 1) {
-    lua_pushnumber(L, d);
+    lua_pushnumber(L, lua_Number(d));
     return 1;
   }
   else {
@@ -518,7 +518,7 @@ static int g_write (lua_State *L, FILE *f, int arg) {
     if (lua_type(L, arg) == LUA_TNUMBER) {
       /* optimization: could be done exactly as for strings */
       status = status &&
-          fprintf(f, LUA_NUMBER_FMT, lua_tonumber(L, arg)) > 0;
+          fprintf(f, LUA_NUMBER_FMT, double(lua_tonumber(L, arg))) > 0;
     }
     else {
       size_t l;
