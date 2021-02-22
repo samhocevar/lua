@@ -14,6 +14,8 @@
 */
 #if defined(_WIN32)
 #include <windows.h>
+#undef min
+#undef max
 #endif
 
 
