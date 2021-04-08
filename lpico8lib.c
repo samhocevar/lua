@@ -181,12 +181,23 @@ static int pico8_tostr(lua_State *l) {
 }
 
 static int pico8_tonum(lua_State *l) {
-    char const *s = lua_tostring(l, 1);
-    lua_Number ret;
-    // If parsing failed, PICO-8 returns nothing
-    if (!luaO_str2d(s, strlen(s), &ret)) return 0;
-    lua_pushnumber(l, ret);
-    return 1;
+    if (lua_gettop(l) < 1) {
+        return 0;
+    }
+    if (lua_isnumber(l, 1)) {
+        lua_pushnumber(l, lua_tonumber(l, 1));
+        return 1;
+    }
+    if (lua_isstring(l, 1)) {
+        char const *s = lua_tostring(l, 1);
+        lua_Number ret;
+        // If parsing failed, PICO-8 returns nothing
+        if (!luaO_str2d(s, strlen(s), &ret)) return 0;
+        lua_pushnumber(l, ret);
+        return 1;
+    }
+
+    return 0;
 }
 
 static int pico8_chr(lua_State *l) {
